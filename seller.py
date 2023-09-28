@@ -4,7 +4,6 @@ import os
 import re
 import zipfile
 from environs import Env
-
 import pandas as pd
 import requests
 
@@ -12,7 +11,24 @@ logger = logging.getLogger(__file__)
 
 
 def get_product_list(last_id, client_id, seller_token):
-    """Получить список товаров магазина озон"""
+    """
+    Получает список товаров магазина Ozon.
+
+    Args:
+        last_id (str): ID последнего товара в предыдущем запросе или пустая строка.
+        client_id (str): Идентификатор клиента.
+        seller_token (str): Токен продавца.
+
+    Returns:
+        list: Список товаров магазина Ozon.
+
+    Examples:
+        Пример корректного использования:
+        get_product_list("12345", "client123", "token123")
+
+        Пример некорректного использования:
+        get_product_list(12345, "client123", "token123")
+    """
     url = "https://api-seller.ozon.ru/v2/product/list"
     headers = {
         "Client-Id": client_id,
@@ -32,7 +48,23 @@ def get_product_list(last_id, client_id, seller_token):
 
 
 def get_offer_ids(client_id, seller_token):
-    """Получить артикулы товаров магазина озон"""
+    """
+    Получает артикулы товаров магазина Ozon.
+
+    Args:
+        client_id (str): Идентификатор клиента.
+        seller_token (str): Токен продавца.
+
+    Returns:
+        list: Список артикулов товаров магазина Ozon.
+
+    Examples:
+        Пример корректного использования:
+        get_offer_ids("client123", "token123")
+
+        Пример некорректного использования:
+        get_offer_ids(12345, "token123")
+    """
     last_id = ""
     product_list = []
     while True:
@@ -49,7 +81,24 @@ def get_offer_ids(client_id, seller_token):
 
 
 def update_price(prices: list, client_id, seller_token):
-    """Обновить цены товаров"""
+    """
+    Обновляет цены товаров магазина Ozon.
+
+    Args:
+        prices (list): Список цен товаров для обновления.
+        client_id (str): Идентификатор клиента.
+        seller_token (str): Токен продавца.
+
+    Returns:
+        dict: Результат обновления цен.
+
+    Examples:
+        Пример корректного использования:
+        update_price([{"offer_id": "12345", "price": "5990"}], "client123", "token123")
+
+        Пример некорректного использования:
+        update_price({"offer_id": "12345", "price": "5990"}, "client123", "token123")
+    """
     url = "https://api-seller.ozon.ru/v1/product/import/prices"
     headers = {
         "Client-Id": client_id,
@@ -62,7 +111,24 @@ def update_price(prices: list, client_id, seller_token):
 
 
 def update_stocks(stocks: list, client_id, seller_token):
-    """Обновить остатки"""
+    """
+    Обновляет остатки товаров магазина Ozon.
+
+    Args:
+        stocks (list): Список остатков товаров для обновления.
+        client_id (str): Идентификатор клиента.
+        seller_token (str): Токен продавца.
+
+    Returns:
+        dict: Результат обновления остатков.
+
+    Examples:
+        Пример корректного использования:
+        update_stocks([{"offer_id": "12345", "stock": 10}], "client123", "token123")
+
+        Пример некорректного использования:
+        update_stocks({"offer_id": "12345", "stock": 10}, "client123", "token123")
+    """
     url = "https://api-seller.ozon.ru/v1/product/import/stocks"
     headers = {
         "Client-Id": client_id,
@@ -75,7 +141,19 @@ def update_stocks(stocks: list, client_id, seller_token):
 
 
 def download_stock():
-    """Скачать файл ostatki с сайта casio"""
+    """
+    Скачивает файл с остатками с сайта Casio и обрабатывает его.
+
+    Returns:
+        list: Список остатков часов.
+
+    Examples:
+        Пример корректного использования:
+        download_stock()
+
+        Пример некорректного использования:
+        (нет аргументов)
+    """
     # Скачать остатки с сайта
     casio_url = "https://timeworld.ru/upload/files/ostatki.zip"
     session = requests.Session()
@@ -96,6 +174,23 @@ def download_stock():
 
 
 def create_stocks(watch_remnants, offer_ids):
+    """
+    Создает список остатков товаров для обновления.
+
+    Args:
+        watch_remnants (list): Список остатков товаров с сайта Casio.
+        offer_ids (list): Список артикулов товаров магазина Ozon.
+
+    Returns:
+        list: Список остатков товаров для обновления.
+
+    Examples:
+        Пример корректного использования:
+        create_stocks(watch_remnants, ["12345", "67890"])
+
+        Пример некорректного использования:
+        create_stocks(watch_remnants, "12345")
+    """
     # Уберем то, что не загружено в seller
     stocks = []
     for watch in watch_remnants:
@@ -116,6 +211,23 @@ def create_stocks(watch_remnants, offer_ids):
 
 
 def create_prices(watch_remnants, offer_ids):
+    """
+    Создает список цен товаров для обновления.
+
+    Args:
+        watch_remnants (list): Список остатков товаров с сайта Casio.
+        offer_ids (list): Список артикулов товаров магазина Ozon.
+
+    Returns:
+        list: Список цен товаров для обновления.
+
+    Examples:
+        Пример корректного использования:
+        create_prices(watch_remnants, ["12345", "67890"])
+
+        Пример некорректного использования:
+        create_prices(watch_remnants, "12345")
+    """
     prices = []
     for watch in watch_remnants:
         if str(watch.get("Код")) in offer_ids:
@@ -131,17 +243,66 @@ def create_prices(watch_remnants, offer_ids):
 
 
 def price_conversion(price: str) -> str:
-    """Преобразовать цену. Пример: 5'990.00 руб. -> 5990"""
+    """
+    Преобразует цену из формата "5'990.00 руб." в "5990".
+
+    Args:
+        price (str): Цена в виде строки.
+
+    Returns:
+        str: Преобразованная цена в виде строки.
+
+    Examples:
+        Пример корректного использования:
+        price_conversion("5'990.00 руб.")
+
+        Пример некорректного использования:
+        price_conversion(5990)
+    """
     return re.sub("[^0-9]", "", price.split(".")[0])
 
 
 def divide(lst: list, n: int):
-    """Разделить список lst на части по n элементов"""
+    """
+    Разделяет список на части по n элементов.
+
+    Args:
+        lst (list): Исходный список.
+        n (int): Размер частей.
+
+    Yields:
+        list: Часть списка.
+
+    Examples:
+        Пример корректного использования:
+        divide([1, 2, 3, 4, 5, 6], 2)
+
+        Пример некорректного использования:
+        divide([1, 2, 3, 4, 5, 6], "2")
+    """
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
 
 
 async def upload_prices(watch_remnants, client_id, seller_token):
+    """
+    Загружает цены товаров магазина Ozon из списка остатков.
+
+    Args:
+        watch_remnants (list): Список остатков товаров с сайта Casio.
+        client_id (str): Идентификатор клиента.
+        seller_token (str): Токен продавца.
+
+    Returns:
+        list: Список цен товаров, которые были загружены.
+
+    Examples:
+        Пример корректного использования:
+        upload_prices(watch_remnants, "client123", "token123")
+
+        Пример некорректного использования:
+        upload_prices(watch_remnants, "client123", 12345)
+    """
     offer_ids = get_offer_ids(client_id, seller_token)
     prices = create_prices(watch_remnants, offer_ids)
     for some_price in list(divide(prices, 1000)):
@@ -150,6 +311,24 @@ async def upload_prices(watch_remnants, client_id, seller_token):
 
 
 async def upload_stocks(watch_remnants, client_id, seller_token):
+    """
+    Загружает остатки товаров магазина Ozon из списка остатков.
+
+    Args:
+        watch_remnants (list): Список остатков товаров с сайта Casio.
+        client_id (str): Идентификатор клиента.
+        seller_token (str): Токен продавца.
+
+    Returns:
+        tuple: Кортеж, содержащий два списка - остатки, которые были загружены и все остатки.
+
+    Examples:
+        Пример корректного использования:
+        upload_stocks(watch_remnants, "client123", "token123")
+
+        Пример некорректного использования:
+        upload_stocks(watch_remnants, 12345, "token123")
+    """
     offer_ids = get_offer_ids(client_id, seller_token)
     stocks = create_stocks(watch_remnants, offer_ids)
     for some_stock in list(divide(stocks, 100)):
